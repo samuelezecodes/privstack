@@ -7,6 +7,7 @@
 (define-constant ERR-INSUFFICIENT-BALANCE (err u101))
 (define-constant ERR-INVALID-AMOUNT (err u102))
 (define-constant ERR-POOL-EMPTY (err u103))
+(define-constant ERR-INVALID-OWNER (err u104))
 
 ;; Data Variables
 (define-data-var total-liquidity uint u0)
@@ -29,6 +30,14 @@
 
 (define-private (verify-nullifier (nullifier (buff 32)))
     (not (default-to false (map-get? nullifiers nullifier)))
+)
+
+(define-private (is-valid-owner (address principal))
+    (and 
+        (not (is-eq address (as-contract tx-sender)))
+        (not (is-eq address .privstack))
+        (not (is-eq address 'ST000000000000000000002AMW42H))  ;; burn address
+    )
 )
 
 ;; Public Functions
@@ -87,6 +96,7 @@
 (define-public (set-contract-owner (new-owner principal))
     (begin
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-valid-owner new-owner) ERR-INVALID-OWNER)
         (var-set contract-owner new-owner)
         (ok true)
     )
