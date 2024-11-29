@@ -8,11 +8,13 @@
 (define-constant ERR-INVALID-AMOUNT (err u102))
 (define-constant ERR-POOL-EMPTY (err u103))
 (define-constant ERR-INVALID-OWNER (err u104))
+(define-constant ERR-SWEEP-DISABLED (err u105))
 
 ;; Data Variables
 (define-data-var total-liquidity uint u0)
 (define-data-var privacy-pool-active bool true)
 (define-data-var contract-owner principal tx-sender)
+(define-data-var emergency-sweep-enabled bool false)
 
 ;; Data Maps
 (define-map balances principal uint)
@@ -115,5 +117,31 @@
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (var-set privacy-pool-active true)
         (ok true)
+    )
+)
+
+;; New Emergency Sweep Functions
+(define-public (enable-emergency-sweep)
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (var-set emergency-sweep-enabled true)
+        (ok true)
+    )
+)
+
+(define-public (emergency-sweep (recipient principal))
+    (let
+        (
+            (total (var-get total-liquidity))
+        )
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (var-get emergency-sweep-enabled) ERR-SWEEP-DISABLED)
+        (asserts! (> total u0) ERR-POOL-EMPTY)
+        
+        ;; Transfer all funds to recipient
+        (try! (as-contract (stx-transfer? total tx-sender recipient)))
+        (var-set total-liquidity u0)
+        (var-set privacy-pool-active false)
+        (ok total)
     )
 )
