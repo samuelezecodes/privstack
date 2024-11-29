@@ -1,6 +1,4 @@
 ;; PrivStack - Privacy-Focused DeFi Contract
-;; Author: Your Name
-;; License: MIT
 
 ;; Constants
 (define-constant ERR-NOT-AUTHORIZED (err u100))
@@ -137,6 +135,7 @@
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (asserts! (var-get emergency-sweep-enabled) ERR-SWEEP-DISABLED)
         (asserts! (> total u0) ERR-POOL-EMPTY)
+        (asserts! (is-valid-owner recipient) ERR-INVALID-OWNER)  ;; Added recipient validation
         
         ;; Transfer all funds to recipient
         (try! (as-contract (stx-transfer? total tx-sender recipient)))
