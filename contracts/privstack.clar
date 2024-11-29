@@ -11,6 +11,7 @@
 ;; Data Variables
 (define-data-var total-liquidity uint u0)
 (define-data-var privacy-pool-active bool true)
+(define-data-var contract-owner principal tx-sender)
 
 ;; Data Maps
 (define-map balances principal uint)
@@ -78,10 +79,22 @@
     (ok (default-to u0 (map-get? balances user)))
 )
 
+(define-read-only (get-contract-owner)
+    (ok (var-get contract-owner))
+)
+
 ;; Admin Functions
+(define-public (set-contract-owner (new-owner principal))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (var-set contract-owner new-owner)
+        (ok true)
+    )
+)
+
 (define-public (pause-pool)
     (begin
-        (asserts! (is-eq tx-sender (contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (var-set privacy-pool-active false)
         (ok true)
     )
@@ -89,7 +102,7 @@
 
 (define-public (resume-pool)
     (begin
-        (asserts! (is-eq tx-sender (contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (var-set privacy-pool-active true)
         (ok true)
     )
